@@ -14,8 +14,12 @@ import { useEffect, useState } from "react";
 import ITag from "../../../interfaces/ITag";
 import http from "../../../Http";
 import IRestaurante from "../../../interfaces/IRestaurante";
+import { useParams } from "react-router-dom";
+import IPrato from "../../../interfaces/IPrato";
 
 const FormularioPratos = () => {
+  const parametros = useParams();
+
   const [nomePrato, setNomePrato] = useState("");
   const [descricao, setDescricao] = useState("");
 
@@ -25,6 +29,17 @@ const FormularioPratos = () => {
   const [restaurantes, setRestaurantes] = useState<IRestaurante[]>([]);
 
   const [imagem, setImagem] = useState<File | null>();
+
+  useEffect(() => {
+    if (parametros.id) {
+      http.get<IPrato>(`pratos/${parametros.id}/`).then((resposta) => {
+        setNomePrato(resposta.data.nome);
+        setDescricao(resposta.data.descricao);
+        setTag(resposta.data.tag);
+        setRestaurante(resposta.data.restaurante);
+      });
+    }
+  }, [parametros]);
 
   useEffect(() => {
     http
@@ -57,23 +72,42 @@ const FormularioPratos = () => {
       formData.append("imagem", imagem);
     }
 
-    http
-      .request({
-        url: "pratos/",
-        method: "POST",
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        data: formData,
-      })
-      .then(() => {
-        setNomePrato("");
-        setDescricao("");
-        setTag("");
-        setRestaurante("");
-        alert("Prato cadastrado!");
-      })
-      .catch((error) => console.log(error));
+    if (parametros.id) {
+      http
+        .put(`pratos/${parametros.id}/`, {
+          nome: nomePrato,
+          descricao,
+          tag,
+          restaurante,
+          imagem,
+        })
+        .then(() => {
+          setNomePrato("");
+          setDescricao("");
+          setTag("");
+          setRestaurante("");
+          alert("Prato atualizado!");
+        })
+        .catch((error) => console.log(error));
+    } else {
+      http
+        .request({
+          url: "pratos/",
+          method: "POST",
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          data: formData,
+        })
+        .then(() => {
+          setNomePrato("");
+          setDescricao("");
+          setTag("");
+          setRestaurante("");
+          alert("Prato cadastrado!");
+        })
+        .catch((error) => console.log(error));
+    }
   };
 
   return (
@@ -111,7 +145,7 @@ const FormularioPratos = () => {
                   value={descricao}
                   onChange={(evento) => setDescricao(evento.target.value)}
                   id="standard-basic"
-                  label="Nome do prato"
+                  label="Descrição"
                   variant="standard"
                   fullWidth
                   required
